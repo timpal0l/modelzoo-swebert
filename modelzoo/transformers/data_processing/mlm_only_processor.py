@@ -4,8 +4,8 @@ from functools import reduce
 
 import spacy
 from tqdm import tqdm
+from transformers import BertTokenizer
 
-from modelzoo.transformers.data_processing.Tokenization import FullTokenizer
 from modelzoo.transformers.data_processing.utils import (
     convert_to_unicode,
     create_masked_lm_predictions,
@@ -13,7 +13,6 @@ from modelzoo.transformers.data_processing.utils import (
     text_to_tokenized_documents,
 )
 
-from transformers import BertTokenizer
 
 class MLMOnlyInstance:
     """
@@ -25,7 +24,7 @@ class MLMOnlyInstance:
     """
 
     def __init__(
-        self, tokens, masked_lm_positions, masked_lm_labels,
+            self, tokens, masked_lm_positions, masked_lm_labels,
     ):
         self.tokens = tokens
         self.masked_lm_labels = masked_lm_labels
@@ -51,29 +50,29 @@ class MLMOnlyInstance:
 
 
 def data_generator(
-    metadata_files,
-    vocab_file,
-    do_lower,
-    disable_masking,
-    mask_whole_word,
-    max_seq_length,
-    max_predictions_per_seq,
-    masked_lm_prob,
-    dupe_factor,
-    output_type_shapes,
-    multiple_docs_in_single_file=False,
-    multiple_docs_separator="\n",
-    single_sentence_per_line=False,
-    buffer_size=1e6,
-    min_short_seq_length=None,
-    overlap_size=None,
-    short_seq_prob=0,
-    spacy_model="en_core_web_sm",
-    inverted_mask=False,
-    allow_cross_document_examples=True,
-    document_separator_token="[SEP]",
-    seed=None,
-    input_files_prefix="",
+        metadata_files,
+        vocab_file,
+        do_lower,
+        disable_masking,
+        mask_whole_word,
+        max_seq_length,
+        max_predictions_per_seq,
+        masked_lm_prob,
+        dupe_factor,
+        output_type_shapes,
+        multiple_docs_in_single_file=False,
+        multiple_docs_separator="\n",
+        single_sentence_per_line=False,
+        buffer_size=1e6,
+        min_short_seq_length=None,
+        overlap_size=None,
+        short_seq_prob=0,
+        spacy_model="en_core_web_sm",
+        inverted_mask=False,
+        allow_cross_document_examples=True,
+        document_separator_token="[SEP]",
+        seed=None,
+        input_files_prefix="",
 ):
     """
     Generator function used to create input dataset
@@ -153,7 +152,7 @@ def data_generator(
         min_short_seq_length = 2 + overlap_size
 
     elif (min_short_seq_length < (2 + overlap_size)) or (
-        min_short_seq_length > max_seq_length - 2
+            min_short_seq_length > max_seq_length - 2
     ):
 
         raise ValueError(
@@ -163,14 +162,15 @@ def data_generator(
 
     # define tokenizer
     # load custom tokenizer!!
-    tokenizer = BertTokenizer.from_pretrained("/data3/tokenizer", clean_text=True, handle_chinese_chars=False, strip_accents=False, do_lower_case=False)
+    tokenizer = BertTokenizer.from_pretrained("/data3/tokenizer", clean_text=True, handle_chinese_chars=False,
+                                              strip_accents=False, do_lower_case=False)
     vocab_words = tokenizer.get_vocab().keys()
 
     # if do_lower:
     #     document_separator_token = document_separator_token.lower()
 
     assert (
-        document_separator_token in vocab_words
+            document_separator_token in vocab_words
     ), f" document_separator_token: {document_separator_token} not present in vocab file"
 
     rng = random.Random(seed)
@@ -218,7 +218,11 @@ def data_generator(
         for _file_num, _file in enumerate(input_files):
             _fin_path = os.path.abspath(os.path.join(input_files_prefix, _file))
             with open(_fin_path, "r") as _fin:
-                _fin_data = _fin.read()
+                try:
+                    _fin_data = _fin.read()
+                except FileNotFoundError:
+                    print(f'No file found named {_fin_path}')
+                    continue
             processed_doc, num_tokens = text_to_tokenized_documents(
                 _fin_data,
                 tokenizer,
@@ -239,8 +243,8 @@ def data_generator(
 
             # Continue if we don't have enough tokens
             if (
-                current_buffer_length < buffer_size
-                and _file_num < num_input_files - 1
+                    current_buffer_length < buffer_size
+                    and _file_num < num_input_files - 1
             ):
                 continue
 
@@ -273,19 +277,18 @@ def data_generator(
 
 
 def create_masked_lm_features(
-    example,
-    vocab_words,
-    max_seq_length,
-    mask_whole_word,
-    max_predictions_per_seq,
-    masked_lm_prob,
-    document_separator_token,
-    rng,
-    tokenizer,
-    output_type_shapes,
-    inverted_mask,
+        example,
+        vocab_words,
+        max_seq_length,
+        mask_whole_word,
+        max_predictions_per_seq,
+        masked_lm_prob,
+        document_separator_token,
+        rng,
+        tokenizer,
+        output_type_shapes,
+        inverted_mask,
 ):
-
     exclude_from_masking = list(
         set(["[CLS]", "[SEP]", document_separator_token])
     )
@@ -324,15 +327,15 @@ def create_masked_lm_features(
 
 
 def _create_examples_from_document(
-    document,
-    allow_cross_document_examples,
-    document_separator_token,
-    overlap_size,
-    prev_tokens,
-    max_seq_length,
-    short_seq_prob,
-    min_short_seq_length,
-    rng,
+        document,
+        allow_cross_document_examples,
+        document_separator_token,
+        overlap_size,
+        prev_tokens,
+        max_seq_length,
+        short_seq_prob,
+        min_short_seq_length,
+        rng,
 ):
     # Process for generating an example
     # 1. The text from metadata files is read and accumulated in a buffer
@@ -364,7 +367,7 @@ def _create_examples_from_document(
         target_seq_len = rng.randint(min_short_seq_length, max_num_tokens)
 
     assert (
-        len(prev_tokens) <= max_seq_length
+            len(prev_tokens) <= max_seq_length
     ), "Number of leftover tokens i.e len(prev_tokens) > max_seq_length"
 
     # NOTE: prev_tokens cannot be more than MSL.
@@ -383,15 +386,15 @@ def _create_examples_from_document(
 
     while end_idx < len(document):
         example = document[
-            start_idx : end_idx + 1
-        ]  # All elements from start_idx to end_idx (inclusive)
+                  start_idx: end_idx + 1
+                  ]  # All elements from start_idx to end_idx (inclusive)
 
         # add special token for input start and end
         assert (
-            len(example) > overlap_size
+                len(example) > overlap_size
         ), f"Length of example {len(example)} less than overlap_size {overlap_size}"
         assert (
-            len(example) <= max_num_tokens
+                len(example) <= max_num_tokens
         ), f"Length of example greater than max_num_tokens {max_num_tokens}"
 
         example.insert(0, "[CLS]")
@@ -407,10 +410,10 @@ def _create_examples_from_document(
         end_idx = start_idx + target_seq_len - 1
 
         assert (
-            end_idx > 0
+                end_idx > 0
         ), f" When generating example, end_idx {end_idx} is less than zero."
         assert (
-            start_idx >= 0
+                start_idx >= 0
         ), f" When generating example, start_idx {start_idx} is less than zero."
 
     if allow_cross_document_examples:
