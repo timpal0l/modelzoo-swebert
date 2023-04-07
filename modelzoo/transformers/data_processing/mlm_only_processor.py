@@ -216,60 +216,60 @@ def data_generator(
         prev_tokens = []
 
         for _file_num, _file in enumerate(input_files):
-            _fin_path = os.path.abspath(os.path.join(input_files_prefix, _file))
-            with open(_fin_path, "r") as _fin:
-                try:
+            try:
+                _fin_path = os.path.abspath(os.path.join(input_files_prefix, _file))
+                with open(_fin_path, "r") as _fin:
                     _fin_data = _fin.read()
-                except FileNotFoundError:
-                    print(f'No file found named {_fin_path}')
-                    continue
-            processed_doc, num_tokens = text_to_tokenized_documents(
-                _fin_data,
-                tokenizer,
-                multiple_docs_in_single_file,
-                multiple_docs_separator,
-                single_sentence_per_line,
-                nlp,
-            )
-
-            # Flatten one level
-            buffer_documents.extend(
-                [
-                    reduce(lambda x, y: x + y, doc_list)
-                    for doc_list in processed_doc
-                ]
-            )
-            current_buffer_length += num_tokens
-
-            # Continue if we don't have enough tokens
-            if (
-                    current_buffer_length < buffer_size
-                    and _file_num < num_input_files - 1
-            ):
-                continue
-
-            rng.shuffle(buffer_documents)
-
-            # When enough tokens available, yield examples
-            for document_index, document in enumerate(buffer_documents):
-                _example_generator = _create_examples_from_document(
-                    document,
-                    allow_cross_document_examples,
-                    document_separator_token,
-                    overlap_size,
-                    prev_tokens,
-                    max_seq_length,
-                    short_seq_prob,
-                    min_short_seq_length,
-                    rng,
+                processed_doc, num_tokens = text_to_tokenized_documents(
+                    _fin_data,
+                    tokenizer,
+                    multiple_docs_in_single_file,
+                    multiple_docs_separator,
+                    single_sentence_per_line,
+                    nlp,
                 )
-                for example, prev_tokens in _example_generator:
-                    if example:
-                        yield _generate_train_feature(example)
 
-            # Fix buffer lengths, buffer etc
-            buffer_documents = []
-            current_buffer_length = 0
+                # Flatten one level
+                buffer_documents.extend(
+                    [
+                        reduce(lambda x, y: x + y, doc_list)
+                        for doc_list in processed_doc
+                    ]
+                )
+                current_buffer_length += num_tokens
+
+                # Continue if we don't have enough tokens
+                if (
+                        current_buffer_length < buffer_size
+                        and _file_num < num_input_files - 1
+                ):
+                    continue
+
+                rng.shuffle(buffer_documents)
+
+                # When enough tokens available, yield examples
+                for document_index, document in enumerate(buffer_documents):
+                    _example_generator = _create_examples_from_document(
+                        document,
+                        allow_cross_document_examples,
+                        document_separator_token,
+                        overlap_size,
+                        prev_tokens,
+                        max_seq_length,
+                        short_seq_prob,
+                        min_short_seq_length,
+                        rng,
+                    )
+                    for example, prev_tokens in _example_generator:
+                        if example:
+                            yield _generate_train_feature(example)
+
+                # Fix buffer lengths, buffer etc
+                buffer_documents = []
+                current_buffer_length = 0
+            except FileNotFoundError:
+                print(f"could open file {_fin_path}")
+                continue
 
         # Last few tokens remaining after processing all input_files
         if prev_tokens:
