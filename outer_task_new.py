@@ -16,7 +16,7 @@ def process_metadata_file(meta_file):
 
     for file_path in file_paths:
         # run the command for each file_path
-        cmd = f"python create_csv_mlm_only.py " \
+        cmd = f"python /data3/modelzoo-swebert/modelzoo/transformers/pytorch/bert/input/scripts/create_csv_mlm_only.py " \
               f"--metadata_files {meta_file} " \
               f"--input_files_prefix {input_files_prefix} " \
               f"--vocab_file {vocab_file} " \
