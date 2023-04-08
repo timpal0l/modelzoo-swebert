@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+from random import randint
 
 
 def process_metadata_file(meta_file):
@@ -11,30 +12,25 @@ def process_metadata_file(meta_file):
     spacy_model = "sv_core_news_lg"
     overlap_size = 0
 
-    with open(meta_file) as f:
-        file_paths = f.readlines()
-
-    for file_path in file_paths:
-        # run the command for each file_path
-        cmd = f"python /data3/modelzoo-swebert/modelzoo/transformers/pytorch/bert/input/scripts/create_csv_mlm_only.py " \
-              f"--metadata_files {meta_file} " \
-              f"--input_files_prefix {input_files_prefix} " \
-              f"--vocab_file {vocab_file} " \
-              f"--output_dir {output_dir} " \
-              f"--max_seq_length {max_seq_length} " \
-              f"--max_predictions_per_seq {max_predictions_per_seq} " \
-              f"--spacy_model {spacy_model} " \
-              f"--overlap_size {overlap_size} {file_path.strip()}"
-        os.system(cmd)
+    cmd = f"python /data3/modelzoo-swebert/modelzoo/transformers/pytorch/bert/input/scripts/create_csv_mlm_only.py " \
+          f"--metadata_files {meta_file} " \
+          f"--input_files_prefix {input_files_prefix} " \
+          f"--vocab_file {vocab_file} " \
+          f"--output_dir {os.path.join(output_dir, str(randint(0, 100_000_000)))} " \
+          f"--max_seq_length {max_seq_length} " \
+          f"--max_predictions_per_seq {max_predictions_per_seq} " \
+          f"--spacy_model {spacy_model} " \
+          f"--overlap_size {overlap_size}"
+    os.system(cmd)
 
 
 if __name__ == '__main__':
     meta_files_dir = "/data3/nordic-pile/train_meta"
     meta_files = [os.path.join(meta_files_dir, f) for f in os.listdir(meta_files_dir)]
 
-    num_processes = multiprocessing.cpu_count()
+    # num_processes = multiprocessing.cpu_count()
+    num_processes = 32
     pool = multiprocessing.Pool(processes=num_processes)
-
     pool.map(process_metadata_file, meta_files)
 
     pool.close()
