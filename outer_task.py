@@ -8,7 +8,7 @@ def run_hello_world(file_list):
     # cmd = f"python hello_world.py {file_list}"
     path = "/data3/modelzoo-swebert/modelzoo/transformers/pytorch/bert/input/scripts/"
     cmd = f"python {path}create_csv_mlm_only.py " \
-          f"--metadata_files {file_list} " \
+          f"--metadata_files /data3/nordic-pile/train_meta/{file_list} " \
           f"--input_files_prefix /data3/nordic-pile/txt-files-all " \
           f"--vocab_file /data3/vocab.txt " \
           f"--output_dir /data3/training_data/train_512k_uncased_msl512 " \
